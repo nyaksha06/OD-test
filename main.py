@@ -3,8 +3,8 @@ import asyncio
 import json
 import time
 
-from mavsdk_telemetry_collector import connect_drone, get_drone_telemetry
-from ollama_advisor import get_ollama_response
+from telemetry import connect_drone, get_drone_telemetry
+from ollama_res import get_ollama_response
 
 async def run_ollama_drone_advisor(duration_seconds=300, update_interval_seconds=3):
     """
