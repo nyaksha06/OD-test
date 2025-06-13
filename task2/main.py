@@ -2,6 +2,8 @@
 import asyncio
 import json
 import time
+import queue
+import threading
 
 from telemetry import connect_drone, get_drone_telemetry
 from ollama_res import get_ollama_action
@@ -25,15 +27,43 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
     print("Drone connected. Ready for commands.")
 
     # Task to continuously monitor human input
+    # async def human_input_monitor():
+    #     global last_human_command
+    #     while True:
+    #         new_command = await asyncio.to_thread(input, "\nEnter command for drone (e.g., 'Take off to 10m', 'Go to 23.0225, 72.5714 at 50m', 'Land', 'RTL', 'Status'): ")
+    #         if new_command.strip():
+    #             last_human_command = new_command.strip()
+    #             print(f"Human command received: '{last_human_command}'")
+    #         await asyncio.sleep(0.1) # Prevent busy-waiting
+    input_queue = queue.Queue()
+
+    def _get_input_in_thread(prompt, input_q):
+        input_q.put(input(prompt))
+
     async def human_input_monitor():
         global last_human_command
+        # Start the input thread if it's not running or completed
+        input_thread = None
         while True:
-            new_command = await asyncio.to_thread(input, "\nEnter command for drone (e.g., 'Take off to 10m', 'Go to 23.0225, 72.5714 at 50m', 'Land', 'RTL', 'Status'): ")
-            if new_command.strip():
-                last_human_command = new_command.strip()
-                print(f"Human command received: '{last_human_command}'")
-            await asyncio.sleep(0.1) # Prevent busy-waiting
+            if input_thread is None or not input_thread.is_alive():
+                # Start new input thread
+                input_thread = threading.Thread(
+                    target=_get_input_in_thread,
+                    args=("\nEnter command for drone (e.g., 'Take off to 10m', 'Go to 23.0225, 72.5714 at 50m', 'Land', 'RTL', 'Status'): ", input_queue)
+                )
+                input_thread.daemon = True # Allow main program to exit even if thread is running
+                input_thread.start()
 
+            # Check if input is available without blocking
+            try:
+                new_command = input_queue.get_nowait()
+                if new_command.strip():
+                    last_human_command = new_command.strip()
+                    print(f"Human command received: '{last_human_command}'")
+            except queue.Empty:
+                pass # No new input yet
+
+            await asyncio.sleep(0.1) # Check frequently
     # Start the human input monitor as a background task
     input_task = asyncio.create_task(human_input_monitor())
 
