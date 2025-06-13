@@ -164,3 +164,19 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
                 await input_task # Await to ensure cancellation propagates
             except asyncio.CancelledError:
                 pass # Expected during graceful shutdown
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(run_ollama_drone_advisor())
+    except KeyboardInterrupt:
+        print("\nSimulation interrupted by user.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
