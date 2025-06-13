@@ -26,7 +26,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
 
     # Task to continuously monitor human input
     async def human_input_monitor():
-        nonlocal last_human_command
+        global last_human_command
         while True:
             new_command = await asyncio.to_thread(input, "\nEnter command for drone (e.g., 'Take off to 10m', 'Go to 23.0225, 72.5714 at 50m', 'Land', 'RTL', 'Status'): ")
             if new_command.strip():
