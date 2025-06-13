@@ -1,17 +1,13 @@
 
 import json
 import asyncio
-import httpx # For asynchronous HTTP requests
+import httpx 
 
 # Configuration for Ollama
 OLLAMA_HOST = "http://localhost:11434"
-OLLAMA_MODEL = "mistral" # Or 'phi3' or 'llama2' - ensure you have pulled this model
+OLLAMA_MODEL = "llama3.2:1b" 
 
-async def get_ollama_response(telemetry_data: dict):
-    """
-    Sends telemetry data to Ollama and gets a structured response.
-    """
-    # Craft the prompt for Ollama
+async def get_ollama_response(telemetry_data: dict):    
     prompt_content = f"""
     You are an AI assistant for a drone operation. Your task is to analyze the provided drone telemetry data,
     identify any issues or notable statuses, provide a human-readable summary, and suggest a proactive action if necessary.
@@ -42,8 +38,8 @@ async def get_ollama_response(telemetry_data: dict):
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": prompt_content,
-        "stream": False, # We want the full response at once
-        "format": "json" # Ask Ollama for JSON output
+        "stream": False, 
+        "format": "json" 
     }
 
     try:
