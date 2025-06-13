@@ -45,12 +45,11 @@ async def get_ollama_response(telemetry_data: dict):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(f"{OLLAMA_HOST}/api/generate", json=payload, timeout=30.0)
-            response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
+            response.raise_for_status() 
             
             response_data = response.json()
             
-            # Ollama's 'generate' endpoint often returns text in 'response' field for non-chat models
-            # And even with format="json", sometimes it's wrapped. We need to parse carefully.
+        
             raw_text = response_data.get("response", "").strip()
             
             # Attempt to parse the raw text as JSON
@@ -96,14 +95,9 @@ async def main_ollama_test():
         "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
         "velocity_ned": {"north_m_s": 5.0, "east_m_s": 0.0, "down_m_s": 0.0},
         "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
-        "battery": {"remaining_percent": 12, "voltage_v": 22.1}, # Low battery
+        "battery": {"remaining_percent": 12, "voltage_v": 22.1}, 
         "flight_mode": "AUTO",
         "gps_info": {"num_satellites": 12, "fix_type": 3},
-        "health": {
-            "gyro_calibrated": True, "accel_calibrated": True, "mag_calibrated": True,
-            "baro_calibrated": True, "gps_ok": True, "home_position_ok": True,
-            "armable": True, "armed": True, "global_position_ok": True, "local_position_ok": True
-        },
         "in_air": True,
         "armed": True
     }
