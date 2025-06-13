@@ -107,6 +107,8 @@ async def main_collector_test():
     print("Collecting initial telemetry...")
     telemetry = await get_drone_telemetry(drone)
     print(json.dumps(telemetry, indent=2))
+    await drone.action.land()
+    await asyncio.sleep(10)
     await drone.action.disarm() # Clean up
     await drone.action.kill() # Clean up
 
