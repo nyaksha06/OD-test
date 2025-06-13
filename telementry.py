@@ -56,21 +56,7 @@ async def get_drone_telemetry(drone: System):
         }
         break
 
-    #health status
-    async for health in drone.telemetry.health():
-        telemetry_data["health"] = {
-            # "gyro_calibrated": health.gyro_calibrated,
-            # "accel_calibrated": health.accel_calibrated,
-            # "mag_calibrated": health.mag_calibrated,
-            # "baro_calibrated": health.baro_calibrated,
-            # "gps_ok": health.gps_ok,
-            # "home_position_ok": health.home_position_ok,
-            "armable": health.armable,
-            "armed": health.armed,
-            "global_position_ok": health.global_position_ok,
-            "local_position_ok": health.local_position_ok
-        }
-        break
+    
     
     async for in_air in drone.telemetry.in_air():
         telemetry_data["in_air"] = in_air
