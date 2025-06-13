@@ -1,4 +1,4 @@
-# main_ollama_drone_advisor.py
+
 import asyncio
 import json
 import time
@@ -45,17 +45,14 @@ async def run_ollama_drone_advisor(duration_seconds=300, update_interval_seconds
             print(f"  Issues: {', '.join(ollama_analysis['issues_detected'])}")
         print(f"  Suggested Action: {ollama_analysis.get('suggested_action', 'No action suggested.')}")
         
-        # In a real system, you would now trigger the drone's action based on 'suggested_action'.
-        # For this simulation, we just print it.
-        # Example:
-        # if ollama_analysis.get('suggested_action') == 'Initiate Return to Launch (RTL)':
-        #     print("!!! Executing RTL command (simulated) !!!")
-        #     await drone.action.return_to_launch()
+         # Next Step -> commanding the drone from here
 
         await asyncio.sleep(update_interval_seconds)
 
     print("\nSimulation Finished.")
     if drone:
+        await drone.action.land()
+        await asyncio.sleep(10)
         print("Disarming and killing drone...")
         await drone.action.disarm()
         await drone.action.kill()

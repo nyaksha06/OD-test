@@ -1,4 +1,4 @@
-# mavsdk_telemetry_collector.py
+
 import asyncio
 from mavsdk import System
 
@@ -95,8 +95,8 @@ async def main_collector_test():
     print(json.dumps(telemetry, indent=2))
     await drone.action.land()
     await asyncio.sleep(10)
-    await drone.action.disarm() # Clean up
-    await drone.action.kill() # Clean up
+    await drone.action.disarm() 
+    await drone.action.kill() 
 
 if __name__ == "__main__":
     import json
