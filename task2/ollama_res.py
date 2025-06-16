@@ -121,7 +121,7 @@ async def main_ollama_test():
         "in_air": True,
         "armed": True
     }
-    last_human_response = "go to  25,72 ,30"
+    last_human_response = "go to  latitude : 25, longitude : 72 ,altitude : 30"
     
     print("Testing Ollama with go to telemetry:")
     llm_output = await get_ollama_action(last_human_response,test_telemetry_goto)
