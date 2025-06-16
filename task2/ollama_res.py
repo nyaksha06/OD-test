@@ -8,7 +8,7 @@ OLLAMA_HOST = "http://localhost:11434"
 OLLAMA_MODEL = "llama3.2:1b" 
 
 async def get_ollama_action(human_command: str, telemetry_data: dict):
-    prompt_content =[
+    prompt_content ={
         "prompt1" :  f"""
     You are an AI drone mission planner and safety monitor. Your primary goal is to respond to user commands
     and maintain drone safety, providing structured MAVSDK-compatible actions.
@@ -132,7 +132,7 @@ You are an **AI drone mission controller and safety guardian**. Your sole purpos
 3.  If no specific human command action can be performed or understood, resort to the **Default/Fallback Actions**.
 
    """,
-    ]
+    }
 
     payload = {
         "model": OLLAMA_MODEL,
