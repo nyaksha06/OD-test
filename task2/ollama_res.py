@@ -111,10 +111,20 @@ async def main_ollama_test():
         "in_air": True,
         "armed": True
     }
-    last_human_response = "none"
+    test_telemetry_goto = {
+        "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
+        "velocity_ned": {"north_m_s": 0.0, "east_m_s": 0.0, "down_m_s": 0.0},
+        "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
+        "battery": {"remaining_percent": 12, "voltage_v": 22.1}, 
+        "flight_mode": "AUTO",
+        "gps_info": {"num_satellites": 12, "fix_type": 3},
+        "in_air": True,
+        "armed": True
+    }
+    last_human_response = "go to  25,72 ,30"
     
     print("Testing Ollama with low battery telemetry:")
-    llm_output = await get_ollama_action(last_human_response,test_telemetry_low_battery)
+    llm_output = await get_ollama_action(last_human_response,test_telemetry_goto)
     print(json.dumps(llm_output, indent=2))
 
 if __name__ == "__main__":
