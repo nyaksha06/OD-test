@@ -1,8 +1,7 @@
 import asyncio
 import json
 import time
-import queue
-import threading
+
 
 from telemetry import connect_drone, get_drone_telemetry
 from ollama_res import get_ollama_action
