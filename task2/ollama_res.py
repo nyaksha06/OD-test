@@ -132,11 +132,37 @@ You are an **AI drone mission controller and safety guardian**. Your sole purpos
 3.  If no specific human command action can be performed or understood, resort to the **Default/Fallback Actions**.
 
    """,
+
+   "prompt3" : f"""
+You are an AI drone controller. Based on the drone's current telemetry and the human command, output a single MAVSDK-compatible JSON action.
+
+**Current Telemetry:**
+{json.dumps(telemetry_data, indent=2)}
+
+**Human Command:** "{human_command}"
+
+**Response MUST be ONLY a single JSON object, with one of these exact formats:**
+* `{{"action": "takeoff", "altitude_m": <float>}}`
+* `{{"action": "goto", "latitude_deg": <float>, "longitude_deg": <float>, "altitude_m": <float>}}`
+* `{{"action": "land"}}`
+* `{{"action": "rtl"}}`
+* `{{"action": "arm"}}`
+* `{{"action": "disarm"}}`
+* `{{"action": "hold", "reason": "Reason for holding"}}`
+* `{{"action": "error", "message": "Error description"}}`
+
+**Considerations:**
+- Prioritize safe actions if current state demands (e.g., low battery, GPS loss).
+- If a command requires multiple steps (e.g., "take off" when disarmed), suggest the immediate next step (e.g., "arm").
+- If command is unclear or unexecutable, use "hold" or "error".
+""" ,
+
+
     }
 
     payload = {
         "model": OLLAMA_MODEL,
-        "prompt": prompt_content['prompt2'],
+        "prompt": prompt_content['prompt3'],
         "stream": False,
         "format": "json" 
     }
