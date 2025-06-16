@@ -38,9 +38,13 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
     input_queue = queue.Queue()
 
     def _get_input_in_thread(prompt, input_q):
-        input_q.put(input(prompt))
+        try:
+            input_q.put(input(prompt))
+        except Exception as e:
+            print(f"[Error in input thread]: {e}")
 
     async def human_input_monitor():
+        print("is this part running???")
         global last_human_command
         # Start the input thread if it's not running or completed
         input_thread = None
