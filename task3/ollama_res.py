@@ -157,6 +157,8 @@ You are an AI drone controller. Based on the drone's current telemetry and the h
 - If command is unclear or unexecutable, use "hold" or "error".
 """ ,
 
+ "prompt4" : "",
+
 
     }
 

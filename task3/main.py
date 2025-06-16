@@ -11,7 +11,7 @@ from drone_action import DroneActionExecutor
 
 last_human_command = "Start mission"
 
-Mission = ""
+Mission = " go to lat: 25, lon: 49, altitude : 30 and land there."
 
 
 # --- Main Logic ---
@@ -65,15 +65,15 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             print(json.dumps(llm_action_request, indent=2))
 
             # step-4. Execute suggested action
-            action_type = llm_action_request.get("action")
+            action_type = "takeoff"  #llm_action_request.get("action")
             message = llm_action_request.get("message", "No specific message.")
             
             # --- Action Execution Logic ---
             if action_type == "takeoff":
-                altitude = llm_action_request.get("altitude_m")
+                altitude =   10  #   llm_action_request.get("altitude_m")
                 if telemetry_data.get("in_air") == False:
                     print("-- Drone is taking off...")
-                    await action_executor.takeoff_drone() 
+                    await action_executor.takeoff_drone(altitude) 
                 elif telemetry_data.get("in_air") == False and altitude is not None:
                     await action_executor.takeoff_drone(altitude)
                 else:
