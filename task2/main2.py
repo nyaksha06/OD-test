@@ -113,7 +113,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             llm_action_request = await get_ollama_action(last_human_command, telemetry_data)
             
             # 3. Display Ollama's Suggested Action
-            print("\nOllama's Suggested Action:")
+            print(f"\nOllama's Suggested Action for {last_human_command}:")
             print(json.dumps(llm_action_request, indent=2))
 
             # 4. Execute the Suggested Action via DroneActionExecutor
