@@ -130,15 +130,6 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
     except Exception as e:
         print(f"An unhandled error occurred: {e}")
     finally:
-        # Graceful shutdown: cancel the input task first
-        if input_task:
-            input_task.cancel()
-            try:
-                await input_task # Await to ensure cancellation propagates
-            except asyncio.CancelledError:
-                pass # Expected during graceful shutdown
-
-        # Then handle drone cleanup
         if drone:
             print("Ensuring drone is disarmed and killed for cleanup...")
             try:
