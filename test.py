@@ -31,6 +31,20 @@ async def connect_drone():
     return drone
 
 
+
+async def arm_drone(drone):
+    print("-- Arming...")
+    try:
+        await drone.action.arm()
+        print("-- Drone armed")
+        
+        return True
+    except Exception as e:
+        print(f"Error arming drone: {e}")
+        return False
+
+
+
 async def takeoff_drone( drone , altitude_m: float):
     print(f"-- Taking off to {altitude_m} meters...")
     try:
@@ -50,12 +64,17 @@ async def takeoff_drone( drone , altitude_m: float):
         return False
     
 
+
+
+
+
 async def run():
     print("Starting....")
     drone = None 
 
     drone = await connect_drone()
-
+    print("arming....")
+    arm_drone(drone)
     print("taking off....")
 
     await takeoff_drone(drone , 10)
