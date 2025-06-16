@@ -31,20 +31,18 @@ async def connect_drone():
     return drone
 
 
-async def takeoff_drone(self, altitude_m: float):
+async def takeoff_drone( drone , altitude_m: float):
     print(f"-- Taking off to {altitude_m} meters...")
     try:
-        await self.drone.action.set_takeoff_altitude(altitude_m)
-        await self.drone.action.takeoff()
-        self.current_action = "taking_off"
+        await drone.action.set_takeoff_altitude(altitude_m)
+        await drone.action.takeoff()
         print("-- Takeoff command sent")
         # Wait until it reaches target altitude or very close
-        async for position in self.drone.telemetry.position():
+        async for position in drone.telemetry.position():
             if position.relative_altitude_m >= altitude_m * 0.95: # Within 95% of target
                 print(f"-- Reached takeoff altitude {position.relative_altitude_m:.2f}m")
                 break
             await asyncio.sleep(0.5)
-        self.current_action = "in_air"
         return True
     except Exception as e:
         print(f"Error taking off: {e}")
@@ -59,7 +57,7 @@ async def run():
 
     print("taking off....")
 
-    await takeoff_drone(10)
+    await takeoff_drone(drone , 10)
 
     
 
