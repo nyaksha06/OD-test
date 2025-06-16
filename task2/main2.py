@@ -91,7 +91,8 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
 
     action_executor = DroneActionExecutor(drone)
     print("Drone connected. Ready for commands.")
-
+    drone.action.set_takeoff_altitude(10)
+    print(drone.action.get_takeoff_altitude(10))
     # Start the human input monitor as a background task
     input_task = asyncio.create_task(human_input_monitor())
 
