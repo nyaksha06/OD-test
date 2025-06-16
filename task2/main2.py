@@ -3,7 +3,7 @@ import asyncio
 import json
 import time
 import queue
-import threading
+import threading # Required for threading
 
 from telemetry import connect_drone, get_drone_telemetry
 from ollama_res import get_ollama_action
@@ -12,10 +12,76 @@ from drone_action import DroneActionExecutor
 # Global variable to store the last human command
 last_human_command = "Start mission" # Initial command for the LLM
 
+# --- Threading setup for non-blocking input ---
+input_queue = queue.Queue() # Thread-safe queue to get input from the separate thread
+input_prompt = "\nEnter command for drone (e.g., 'Take off to 10m', 'Go to 23.0225, 72.5714 at 50m', 'Land', 'RTL', 'Status'): "
+
+def _get_input_in_thread(prompt, input_q):
+    """
+    Function to run in a separate thread to get user input.
+    Blocks on input(), then puts the result into the queue.
+    """
+    try:
+        user_input = input(prompt)
+        input_q.put(user_input)
+    except EOFError:
+        # Handle cases where input stream might be closed (e.g., script run with no interactive terminal)
+        input_q.put("") # Put an empty string or specific signal
+    except Exception as e:
+        print(f"Error in input thread: {e}")
+        input_q.put("") # Ensure something is put to prevent blocking
+
+async def human_input_monitor():
+    """
+    Asynchronous task to manage the input thread and update the global command.
+    """
+    global last_human_command
+    input_thread = None # Initialize outside the loop to manage its lifecycle
+
+    while True:
+        # Only start a new input thread if the previous one has finished or hasn't started
+        if input_thread is None or not input_thread.is_alive():
+            # Print the prompt in the main async loop, so it's not duplicated by multiple threads
+            # when the loop is fast, and to keep output synchronized.
+            print(input_prompt, end="", flush=True)
+
+            input_thread = threading.Thread(
+                target=_get_input_in_thread,
+                args=("", input_queue) # Pass empty string, as the prompt is printed above
+            )
+            input_thread.daemon = True # Allows the main program to exit even if thread is still running
+            input_thread.start()
+
+        # Check if input is available in the queue without blocking
+        try:
+            new_command = input_queue.get_nowait()
+            if new_command.strip():
+                last_human_command = new_command.strip()
+                print(f"\nHuman command received: '{last_human_command}'") # Add newline for clarity
+            # If a command was just processed, the thread is likely done,
+            # so we can set input_thread to None to ensure a new one starts next iteration
+            # This helps prevent multiple prompts if user types very slowly.
+            input_thread = None 
+        except queue.Empty:
+            pass # No new input yet
+
+        await asyncio.sleep(0.1) # Check for input frequently but don't busy-wait
+
+# --- Main drone advisor logic ---
 async def run_ollama_drone_advisor(update_interval_seconds=3):
     print("--- Starting Ollama Drone Advisor ---")
 
     drone = None
+    # Initialize telemetry_data with a default structure to avoid NameError in finally block
+    telemetry_data = {
+        "armed": False,
+        "in_air": False,
+        "health": {
+            "global_position_ok": False,
+            "home_position_ok": False,
+        }
+    }
+
     try:
         drone = await connect_drone()
     except Exception as e:
@@ -26,39 +92,6 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
     action_executor = DroneActionExecutor(drone)
     print("Drone connected. Ready for commands.")
 
-    input_queue = queue.Queue()
-
-    def _get_input_in_thread(prompt, input_q):
-        try:
-            input_q.put(input(prompt))
-        except Exception as e:
-            print(f"[Error in input thread]: {e}")
-
-    async def human_input_monitor():
-        print("is this part running???")
-        global last_human_command
-        # Start the input thread if it's not running or completed
-        input_thread = None
-        while True:
-            if input_thread is None or not input_thread.is_alive():
-                # Start new input thread
-                input_thread = threading.Thread(
-                    target=_get_input_in_thread,
-                    args=("\nEnter command for drone (e.g., 'Take off to 10m', 'Go to 23.0225, 72.5714 at 50m', 'Land', 'RTL', 'Status'): ", input_queue)
-                )
-                input_thread.daemon = True # Allow main program to exit even if thread is running
-                input_thread.start()
-
-            # Check if input is available without blocking
-            try:
-                new_command = input_queue.get_nowait()
-                if new_command.strip():
-                    last_human_command = new_command.strip()
-                    print(f"Human command received: '{last_human_command}'")
-            except queue.Empty:
-                pass # No new input yet
-
-            await asyncio.sleep(0.1) # Check frequently
     # Start the human input monitor as a background task
     input_task = asyncio.create_task(human_input_monitor())
 
@@ -67,7 +100,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             print(f"\n--- Telemetry Update (Time: {int(time.time())}s) ---")
             
             # 1. Get Telemetry from MAVSDK (SITL)
-            telemetry_data = await get_drone_telemetry(drone)
+            telemetry_data = await get_drone_telemetry(drone) # telemetry_data is updated here
             print("Raw Telemetry Snippet:")
             print(f"  Battery: {telemetry_data.get('battery', {}).get('remaining_percent', 'N/A')}%")
             print(f"  GPS Fix: {telemetry_data.get('gps_info', {}).get('fix_type', 'N/A')}D")
@@ -77,7 +110,6 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             print(f"  Current Action Executor State: {action_executor.current_action}")
 
             # 2. Send current human command and telemetry to Ollama for Reasoning
-            # We are sending the *last* command, allowing LLM to adapt based on current state
             llm_action_request = await get_ollama_action(last_human_command, telemetry_data)
             
             # 3. Display Ollama's Suggested Action
@@ -88,14 +120,14 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             action_type = llm_action_request.get("action")
             message = llm_action_request.get("message", "No specific message.")
             
+            # --- Action Execution Logic ---
             if action_type == "takeoff":
                 altitude = llm_action_request.get("altitude_m")
                 if telemetry_data.get("armed") == False:
                     print("-- Drone not armed, LLM suggests arming first.")
                     await action_executor.arm_drone()
-                    # After arming, the next loop iteration should lead to takeoff
-                    await asyncio.sleep(update_interval_seconds) # Give time for arming
-                    continue # Skip to next loop iteration
+                    await asyncio.sleep(update_interval_seconds) 
+                    continue 
                 elif telemetry_data.get("in_air") == False and altitude is not None:
                     await action_executor.takeoff_drone(altitude)
                 else:
@@ -139,9 +171,6 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             
             elif action_type == "error":
                 print(f"!!! LLM Error/Intervention Requested: {message} !!!")
-                # In a real system, you'd alert the human operator prominently here
-                # and potentially halt automatic execution.
-                # For now, we'll continue to monitor.
                 await action_executor.hold_drone("LLM requested human intervention due to error.")
             
             else:
@@ -155,34 +184,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
     except Exception as e:
         print(f"An unhandled error occurred: {e}")
     finally:
-        if drone:
-            print("Ensuring drone is disarmed and killed for cleanup...")
-            # Attempt to disarm and kill only if drone is not already disarmed and on ground
-            if telemetry_data.get("armed", False) and telemetry_data.get("in_air", False):
-                print("Drone still in air and armed, attempting RTL/Land before killing.")
-                try:
-                    await drone.action.return_to_launch() # Try RTL first
-                    async for in_air_status in drone.telemetry.in_air():
-                        if not in_air_status: break
-                        await asyncio.sleep(1)
-                except Exception as e:
-                    print(f"RTL failed during cleanup: {e}, attempting land.")
-                    try:
-                        await drone.action.land()
-                        async for in_air_status in drone.telemetry.in_air():
-                            if not in_air_status: break
-                            await asyncio.sleep(1)
-                    except Exception as e_land:
-                        print(f"Land failed during cleanup: {e_land}. Force killing.")
-            
-            # Final disarm and kill attempts
-            try:
-                await drone.action.disarm()
-                await drone.action.kill()
-                print("Drone disarmed and killed successfully.")
-            except Exception as e:
-                print(f"Error during final drone cleanup (disarm/kill): {e}")
-
+        # Graceful shutdown: cancel the input task first
         if input_task:
             input_task.cancel()
             try:
@@ -190,10 +192,53 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             except asyncio.CancelledError:
                 pass # Expected during graceful shutdown
 
+        # Then handle drone cleanup
+        if drone:
+            print("Ensuring drone is disarmed and killed for cleanup...")
+            try:
+                # Get current status before trying to disarm/kill.
+                # Use .read() for immediate snapshot of telemetry streams.
+                current_armed_status = False
+                try:
+                    current_armed_status = await drone.telemetry.armed().read()
+                except Exception as e_read_armed:
+                    print(f"Warning: Could not read armed status during cleanup: {e_read_armed}")
 
+                current_in_air_status = False
+                try:
+                    current_in_air_status = await drone.telemetry.in_air().read()
+                except Exception as e_read_in_air:
+                    print(f"Warning: Could not read in_air status during cleanup: {e_read_in_air}")
 
-
-
+                if current_armed_status and current_in_air_status:
+                    print("Drone still in air and armed, attempting RTL/Land before killing.")
+                    try:
+                        await drone.action.return_to_launch() # Try RTL first
+                        # Wait for it to land
+                        async for in_air_status in drone.telemetry.in_air():
+                            if not in_air_status:
+                                print("Drone landed after RTL attempt.")
+                                break
+                            await asyncio.sleep(1)
+                    except Exception as e:
+                        print(f"RTL failed during cleanup: {e}, attempting land.")
+                        try:
+                            await drone.action.land()
+                            # Wait for it to land
+                            async for in_air_status in drone.telemetry.in_air():
+                                if not in_air_status:
+                                    print("Drone landed after land attempt.")
+                                    break
+                                await asyncio.sleep(1)
+                        except Exception as e_land:
+                            print(f"Land failed during cleanup: {e_land}. Force killing.")
+                
+                # Final disarm and kill attempts (safer now that drone should be on ground)
+                await drone.action.disarm()
+                await drone.action.kill()
+                print("Drone disarmed and killed successfully.")
+            except Exception as e:
+                print(f"Error during final drone cleanup (disarm/kill): {e}")
 
 
 if __name__ == "__main__":
@@ -203,5 +248,3 @@ if __name__ == "__main__":
         print("\nSimulation interrupted by user.")
     except Exception as e:
         print(f"An error occurred: {e}")
-
-
