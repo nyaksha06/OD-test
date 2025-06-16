@@ -165,7 +165,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
                 else:
                     print(f"Skipping land: Not armed or not in air.")
 
-            elif action_type == "rtl":
+            elif action_type == "RTL":
                 if telemetry_data.get("armed") == True and telemetry_data.get("in_air") == True and telemetry_data.get("health", {}).get("home_position_ok", False):
                     await action_executor.rtl_drone()
                 else:

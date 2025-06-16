@@ -101,31 +101,44 @@ async def get_ollama_action(human_command: str, telemetry_data: dict):
 
 
 async def main_ollama_test():
-    test_telemetry_low_battery = {
-        "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
-        "velocity_ned": {"north_m_s": 5.0, "east_m_s": 0.0, "down_m_s": 0.0},
-        "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
-        "battery": {"remaining_percent": 12, "voltage_v": 22.1}, 
-        "flight_mode": "AUTO",
-        "gps_info": {"num_satellites": 12, "fix_type": 3},
-        "in_air": True,
-        "armed": True
-    }
-    test_telemetry_goto = {
-        "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
-        "velocity_ned": {"north_m_s": 0.0, "east_m_s": 0.0, "down_m_s": 0.0},
-        "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
-        "battery": {"remaining_percent": 93, "voltage_v": 22.1}, 
-        "flight_mode": "AUTO",
-        "gps_info": {"num_satellites": 12, "fix_type": 3},
-        "in_air": True,
-        "armed": True
-    }
-    last_human_response = "go to  latitude : 25, longitude : 72 ,altitude : 30"
+    testcases = [
+        {
+            "test_type": "lowBattery",
+            "human_response": None,
+            "telemetry": {
+                "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
+                "velocity_ned": {"north_m_s": 5.0, "east_m_s": 0.0, "down_m_s": 0.0},
+                "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
+                "battery": {"remaining_percent": 12, "voltage_v": 22.1},
+                "flight_mode": "AUTO",
+                "gps_info": {"num_satellites": 12, "fix_type": 3},
+                "in_air": True,
+                "armed": True
+            }
+        },
+        {
+            "test_type": "goTo",
+            "human_response": "go to latitude 25, longitude 48, at 30 altitude",
+            "telemetry": {
+                "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
+                "velocity_ned": {"north_m_s": 0.0, "east_m_s": 0.0, "down_m_s": 0.0},
+                "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
+                "battery": {"remaining_percent": 93, "voltage_v": 22.1},
+                "flight_mode": "AUTO",
+                "gps_info": {"num_satellites": 12, "fix_type": 3},
+                "in_air": True,
+                "armed": True
+            }
+        }
+    ]
     
-    print("Testing Ollama with go to telemetry:")
-    llm_output = await get_ollama_action(last_human_response,test_telemetry_goto)
-    print(json.dumps(llm_output, indent=2))
+    for t in testcases:
+        print(f"Testing Ollama {t['test_type']}:")
+        llm_output = await get_ollama_action(t['human_response'], t['telemetry'])
+        print(json.dumps(llm_output, indent=2))
+    
+    
+    
 
 if __name__ == "__main__":
     asyncio.run(main_ollama_test())
