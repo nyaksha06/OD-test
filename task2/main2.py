@@ -109,6 +109,10 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             print(f"  Armed: {telemetry_data.get('armed', 'N/A')}")
             print(f"  Flight Mode: {telemetry_data.get('flight_mode', 'N/A')}")
             print(f"  Current Action Executor State: {action_executor.current_action}")
+            position = telemetry_data.get("position", {})
+            print(f"  Latitude: {position.get('latitude_deg', 'N/A')}")
+            print(f"  Longitude: {position.get('longitude_deg', 'N/A')}")
+            print(f"  Altitude: {position.get('relative_altitude_m', 'N/A')} m")
 
             # 2. Send current human command and telemetry to Ollama for Reasoning
             llm_action_request = await get_ollama_action(last_human_command, telemetry_data)
