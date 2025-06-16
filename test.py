@@ -74,7 +74,7 @@ async def run():
 
     drone = await connect_drone()
     print("arming....")
-    arm_drone(drone)
+    await arm_drone(drone)
     print("taking off....")
 
     await takeoff_drone(drone , 10)
