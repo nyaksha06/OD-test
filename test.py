@@ -39,6 +39,7 @@ async def takeoff_drone( drone , altitude_m: float):
         print("-- Takeoff command sent")
         # Wait until it reaches target altitude or very close
         async for position in drone.telemetry.position():
+            print("stuck")
             if position.relative_altitude_m >= altitude_m * 0.95: # Within 95% of target
                 print(f"-- Reached takeoff altitude {position.relative_altitude_m:.2f}m")
                 break
