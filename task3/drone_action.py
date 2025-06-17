@@ -34,13 +34,14 @@ class DroneActionExecutor:
             return False
 
     async def takeoff_drone(self, altitude_m: float):
+
+        
         print(f"-- Taking off to {altitude_m} meters...")
         try:
             await self.drone.action.set_takeoff_altitude(altitude_m)
             await self.drone.action.takeoff()
             self.current_action = "taking_off"
             print("-- Takeoff command sent")
-            # Wait until it reaches target altitude or very close
             async for position in self.drone.telemetry.position():
                 if position.relative_altitude_m >= altitude_m * 0.95: # Within 95% of target
                     print(f"-- Reached takeoff altitude {position.relative_altitude_m:.2f}m")

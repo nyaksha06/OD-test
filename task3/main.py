@@ -18,15 +18,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
     print("--- Starting Ollama Drone Advisor ---")
 
     drone = None
-    # Initialize telemetry_data with a default structure to avoid NameError in finally block
-    # telemetry_data = {
-    #     "armed": False,
-    #     "in_air": False,
-    #     "health": {
-    #         "global_position_ok": False,
-    #         "home_position_ok": False,
-    #     }
-    # }
+   
 
     try:
         drone = await connect_drone()
@@ -64,12 +56,12 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
             print(json.dumps(llm_action_request, indent=2))
 
             # step-4. Execute suggested action
-            action_type = "takeoff"  #llm_action_request.get("action")
+            action_type = llm_action_request.get("action")
             message = llm_action_request.get("message", "No specific message.")
             
             # --- Action Execution Logic ---
             if action_type == "takeoff":
-                altitude =   10  #   llm_action_request.get("altitude_m")
+                altitude =    llm_action_request.get("altitude_m")
                 if telemetry_data.get("in_air") == False:
                     print("-- Drone is taking off...")
                     await action_executor.takeoff_drone(altitude) 
@@ -105,7 +97,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
                 else:
                     print(f"Skipping land: Not armed or not in air.")
 
-            elif action_type == "RTL":
+            elif action_type == "rtl":
                 if telemetry_data.get("armed") == True and telemetry_data.get("in_air") == True and telemetry_data.get("health", {}).get("home_position_ok", False):
                     await action_executor.rtl_drone()
                 else:
