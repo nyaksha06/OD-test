@@ -124,8 +124,6 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
         if drone:
             print("Ensuring drone is disarmed and killed for cleanup...")
             try:
-                # Get current status before trying to disarm/kill.
-                # Use .read() for immediate snapshot of telemetry streams.
                 current_armed_status = False
                 try:
                     current_armed_status = await drone.telemetry.armed().read()
@@ -141,7 +139,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
                 if current_armed_status and current_in_air_status:
                     print("Drone still in air and armed, attempting RTL/Land before killing.")
                     try:
-                        await drone.action.return_to_launch() # Try RTL first
+                        await drone.action.return_to_launch()
                         # Wait for it to land
                         async for in_air_status in drone.telemetry.in_air():
                             if not in_air_status:
@@ -161,7 +159,7 @@ async def run_ollama_drone_advisor(update_interval_seconds=3):
                         except Exception as e_land:
                             print(f"Land failed during cleanup: {e_land}. Force killing.")
                 
-                # Final disarm and kill attempts (safer now that drone should be on ground)
+          
                 await drone.action.disarm()
                 await drone.action.kill()
                 print("Drone disarmed and killed successfully.")

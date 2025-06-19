@@ -5,11 +5,11 @@ import asyncio
 
 # Configuration for Ollama
 OLLAMA_HOST = "http://localhost:11434"
-OLLAMA_MODEL = "llama3.2:1b" 
+OLLAMA_MODEL = "deepseek-r1:1.5b" 
 
 async def get_ollama_action(mission_statement: str, telemetry_data: dict):
     prompt_content = f"""
-You are an AI drone controller. Convert the human mission and drone telemetry into a single JSON action.
+You are an AI drone controller. You are provided with the mission and current state of the Drone provide next micro step in order to complete mission.
 
 **Telemetry:**
 {json.dumps(telemetry_data, indent=2)}
@@ -75,7 +75,7 @@ async def main_ollama_test():
     testcases = [
         {
             "test_type": "lowBattery",
-            "human_response": None,
+            "human_response": "go to latitude 25, longitude 48, at 30 altitude",
             "telemetry": {
                 "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
                 "velocity_ned": {"north_m_s": 5.0, "east_m_s": 0.0, "down_m_s": 0.0},
@@ -97,8 +97,8 @@ async def main_ollama_test():
                 "battery": {"remaining_percent": 93, "voltage_v": 22.1},
                 "flight_mode": "AUTO",
                 "gps_info": {"num_satellites": 12, "fix_type": 3},
-                "in_air": True,
-                "armed": True
+                "in_air": False,
+                "armed": False
             }
         }
     ]
