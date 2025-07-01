@@ -85,7 +85,7 @@ You are limited to using only **three actions**:
 
 async def main_ollama_test():
     testcases = [
-       " takeoff at 20m  then move 10 in north, then move 10m in east and then land."
+       " takeoff at 20m  then move 10 in north, then move 10m in east and then land.",
        "takeoff at 10m and inspect reagion in 10m radius."
     ]
     
