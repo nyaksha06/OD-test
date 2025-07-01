@@ -7,33 +7,34 @@ import asyncio
 OLLAMA_HOST = "http://localhost:11434"
 OLLAMA_MODEL = "deepseek-r1:1.5b" 
 
-async def get_ollama_action(mission_statement: str, telemetry_data: dict):
+async def get_ollama_action(mission_statement: str):
     prompt_content = f"""
-You are an AI drone controller. You are provided with the mission and current state of the Drone provide next micro step in order to complete mission.
+You are a highly accurate Drone Mission Planner AI.
 
-**Telemetry:**
-{json.dumps(telemetry_data, indent=2)}
+Your task is to convert the given mission statement (written in simple natural language) into a step-by-step list of **structured micro steps** for the drone.
 
-**Mission Statement:** "{mission_statement}"
+You are limited to using only **three actions**:
+- `"takeoff"` — with a specified altitude in meters.
+- `"goto"` — move relative to the current position with directions in meters (north/south, east/west) and maintain a specified altitude.
+- `"land"` — end the mission.
 
-**Output ONLY a single JSON object with "action" and optional parameters.
-Set parameters to `null` if not applicable to the action.**
+### Response Format Rules:
+- Respond in **valid JSON only**.
+- Do **not include any extra text**, explanations, or comments.
+- Each step must have a key like `"step 1"`, `"step 2"`, etc.
+- The value is a string describing the action and parameters.
 
-**Available Actions & Parameters:**
-* `takeoff`: {{"action": "takeoff", "altitude_m": <float>}}
-* `arm`: {{"action": "arm", "latitude": null, "longitude": null, "altitude_m": null}}
-* `disarm`: {{"action": "disarm", "latitude": null, "longitude": null, "altitude_m": null}}
-* `goto`: {{"action": "goto", "latitude": <float>, "longitude": <float>, "altitude_m": <float>}}
-* `rtl`: {{"action": "rtl", "latitude": null, "longitude": null, "altitude_m": null}}
-* `land`: {{"action": "land", "latitude": null, "longitude": null, "altitude_m": null}}
-* `hold`: {{"action": "hold", "latitude": null, "longitude": null, "altitude_m": null}}
-* `nothing`: {{"action": "nothing", "latitude": null, "longitude": null, "altitude_m": null}}
+### Example JSON Format:
+```json
+{
+  "step 1": "takeoff to 20m",
+  "step 2": "goto north 5m, east -10m, altitude 20m",
+  "step 3": "goto north 10m, east -5m, altitude 30m",
+  "step 4": "land"
+}
 
-**Consider state transitions and safety:**
-- Arm before takeoff.
-- Land before disarm.
-- Prioritize RTL/land for low battery or GPS loss.
-- Suggest "hold" or "nothing" if waiting or busy.
+here is the mission statement you have to work on {mission_statement}.
+
 """
 
     payload = {
@@ -73,39 +74,13 @@ Set parameters to `null` if not applicable to the action.**
 
 async def main_ollama_test():
     testcases = [
-        {
-            "test_type": "lowBattery",
-            "human_response": "go to latitude 25, longitude 48, at 30 altitude",
-            "telemetry": {
-                "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
-                "velocity_ned": {"north_m_s": 5.0, "east_m_s": 0.0, "down_m_s": 0.0},
-                "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
-                "battery": {"remaining_percent": 12, "voltage_v": 22.1},
-                "flight_mode": "AUTO",
-                "gps_info": {"num_satellites": 12, "fix_type": 3},
-                "in_air": True,
-                "armed": True
-            }
-        },
-        {
-            "test_type": "goTo",
-            "human_response": "go to latitude 25, longitude 48, at 30 altitude",
-            "telemetry": {
-                "position": {"latitude_deg": 23.0225, "longitude_deg": 72.5714, "relative_altitude_m": 30.0},
-                "velocity_ned": {"north_m_s": 0.0, "east_m_s": 0.0, "down_m_s": 0.0},
-                "attitude_euler": {"roll_deg": 2.0, "pitch_deg": 1.0, "yaw_deg": 90.0},
-                "battery": {"remaining_percent": 93, "voltage_v": 22.1},
-                "flight_mode": "AUTO",
-                "gps_info": {"num_satellites": 12, "fix_type": 3},
-                "in_air": False,
-                "armed": False
-            }
-        }
+       " takeoff at 20m  then move 10 in north, then move 10m in east and then land."
+       "takeoff at 10m and inspect reagion in 10m radius."
     ]
     
     for t in testcases:
-        print(f"Testing Ollama {t['test_type']}:")
-        llm_output = await get_ollama_action(t['human_response'], t['telemetry'])
+        print(f"Testing Ollama -> {t}:")
+        llm_output = await get_ollama_action(t)
         print(json.dumps(llm_output, indent=2))
     
     
